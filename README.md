@@ -1,10 +1,10 @@
-# 🛒 Sistem Analisis Pola Asosiasi Penjualan (Market Basket Analysis)
+# Sistem Analisis Pola Asosiasi Penjualan (Market Basket Analysis)
 
 Sistem ini dirancang untuk mengotomatisasi penemuan pola pembelian konsumen menggunakan teknik **Association Rule Mining**. Dengan memanfaatkan algoritma **Apriori**, sistem dapat menganalisis item-item yang sering dibeli secara bersamaan oleh pelanggan dalam satu transaksi (Market Basket Analysis).
 
 Proyek ini dibuat untuk memenuhi **Tugas Besar Ujian Akhir Semester (UAS) Mata Kuliah Data Mining**, Universitas Duta Bangsa Surakarta.
 
-## 👥 Kelompok 3 (Topik: Asosiasi)
+## Kelompok 3 (Topik: Asosiasi)
 1. FEBRI SETIYANTO
 2. AHMAD AFFANDI SIKUMBANG
 3. ROYAN FIRDAUS UBAIDAH
@@ -12,32 +12,31 @@ Proyek ini dibuat untuk memenuhi **Tugas Besar Ujian Akhir Semester (UAS) Mata K
 
 ---
 
-## ✨ Fitur Utama
-1. **Upload Dataset Otomatis**: Pengguna dapat mengunggah dataset transaksi berformat CSV.
-2. **Kustomisasi Parameter**: Terdapat penggeser (*slider*) untuk mengatur parameter minimum *Support* dan minimum *Confidence*.
-3. **Data Preprocessing & One-Hot Encoding**: Otomatis mengubah data baris tunggal menjadi matriks biner untuk proses Apriori (menggunakan `.map()`).
-4. **Eksekusi Penambangan Pola Real-time**: Menghasilkan *Frequent Itemsets* dan *Association Rules* yang memenuhi parameter input.
-5. **Interpretasi Bisnis Otomatis**: Menampilkan *insight* dan rekomendasi penempatan produk berdasarkan nilai *Lift* terbesar.
-6. **Performa dengan Caching**: Menggunakan fitur *cache* untuk menghindari *reload* memori setiap kali interaksi terjadi di dalam antarmuka.
+## Fitur Utama
+1. **Arsitektur Berbasis OOP (Clean Code)**: Kode sistem telah dipisah secara modular antara logika penanganan data, mesin algoritma *mining*, dan rendering antarmuka (*UI*).
+2. **Dasbor Multi-Tab Interaktif**: Memisahkan panggung presentasi ke dalam dua Tab: "Tabel Langkah Perhitungan" (untuk penguji algoritma) dan "Dasbor Eksekutif Visual" (untuk wawasan bisnis).
+3. **Peta Kekuatan Aturan (Plotly Scatter Plot)**: Visualisasi tingkat lanjut yang memetakan probabilitas antara metrik *Support*, *Confidence*, dan *Lift* menggunakan titik spasial.
+4. **Pembuktian Rumus Otomatis**: Secara dinamis membedah Aturan Asosiasi Peringkat #1 menjadi rumus matematis LaTeX menggunakan frekuensi angka riil dari dataset.
+5. **Kustomisasi Parameter Real-Time**: Terdapat penggeser (*slider*) di sisi layar untuk mendikte nilai pembatas *Minimum Support* dan *Minimum Confidence*.
 
 ---
 
-## 🛠️ Stack Teknologi
+## Stack Teknologi
 * **Bahasa Pemrograman:** Python 3.10+
 * **Antarmuka Web:** Streamlit
+* **Visualisasi Grafik:** Plotly Express
 * **Manipulasi Data:** Pandas
 * **Algoritma Data Mining:** Mlxtend
-* **Manajemen Kontainer:** Docker & Docker Compose
+* **Manajemen Lingkungan:** Docker & Docker Compose
 
 ---
 
-## 🚀 Cara Menjalankan Aplikasi
+## Cara Menjalankan Aplikasi
 
 Aplikasi ini dapat dijalankan menggunakan **Docker** (Direkomendasikan) atau menggunakan **Python Virtual Environment** (Konvensional).
 
 ### Opsi 1: Menggunakan Docker (Rekomendasi)
-Sistem sudah dikonfigurasi sepenuhnya ke dalam *container* menggunakan Docker untuk menghindari konflik *environment* lokal.
-Pastikan Docker dan Docker Compose telah terinstal di sistem Anda.
+Sistem sudah dikonfigurasi ke dalam *container* agar kode dapat dieksekusi di OS mana pun tanpa takut dependensi bentrok.
 
 1. Buka *terminal* di direktori proyek ini.
 2. Jalankan perintah untuk *build* dan *run* container:
@@ -51,16 +50,16 @@ Pastikan Docker dan Docker Compose telah terinstal di sistem Anda.
    ```
 
 ### Opsi 2: Menggunakan Virtual Environment (Konvensional)
-Jika Anda tidak memiliki Docker, ikuti langkah berikut:
+Jika Anda tidak menggunakan Docker, Anda bisa menjalankannya di mesin lokal:
 
-1. Buka *terminal* dan buat Virtual Environment:
+1. Buat Virtual Environment:
    ```bash
    python -m venv .venv
    ```
 2. Aktivasi Virtual Environment:
    - **Linux / Pop!_OS:** `source .venv/bin/activate`
    - **Windows:** `.venv\Scripts\activate`
-3. Instal semua dependensi yang dibutuhkan:
+3. Instal semua dependensi:
    ```bash
    pip install -r requirements.txt
    ```
@@ -68,35 +67,36 @@ Jika Anda tidak memiliki Docker, ikuti langkah berikut:
    ```bash
    streamlit run app.py
    ```
-5. Akses aplikasi melalui tautan *Local URL* (biasanya http://localhost:8501) yang muncul di layar terminal.
 
 ---
 
-## 💡 Cara Penggunaan Aplikasi
-1. Setelah aplikasi berjalan, perhatikan panel *sidebar* di sebelah kiri layar.
-2. Unggah dataset referensi (contoh: `dataset/BreadBasket.csv`) menggunakan tombol pengunggah file CSV.
-3. Sesuaikan metrik pembatasan:
-   - **Minimum Support**: Toleransi kepopuleran kombinasi item yang ingin ditampilkan.
-   - **Minimum Confidence**: Tingkat kepercayaan atau jaminan kedekatan relasi item.
-4. Klik tombol **"Jalankan Analisis"**.
-5. Sistem akan memuat Pratinjau Matriks Data, *Frequent Itemsets*, serta Daftar Aturan Asosiasi (*Association Rules*) beserta nilai metrik (termasuk *Lift*).
-6. Gulir (*scroll*) hingga bagian terbawah untuk melihat kotak rekomendasi yang di-generasi berdasarkan nilai *Lift* terbesar. Rekomendasi ini dapat dimanfaatkan untuk kebutuhan presentasi bisnis.
+## Panduan Penggunaan
+1. **Unggah Data**: Di panel sebelah kiri, unggah file transaksi berekstensi CSV.
+2. **Atur Batas Toleransi**: Sesuaikan angka pembatas *Minimum Support* (syarat kepopuleran) dan *Minimum Confidence* (syarat kepastian).
+3. **Jalankan Algoritma**: Tekan tombol "Jalankan Analisis".
+4. **Tab 1 - Langkah Perhitungan**: Gunakan tab ini jika Anda ingin menjelaskan langkah matematis algoritma secara kronologis mulai dari *Data Preprocessing*, Iterasi Apriori, hingga pembuktian rumus secara numerik.
+5. **Tab 2 - Visualisasi & Dasbor**: Gunakan tab ini untuk menampilkan presentasi gaya eksekutif yang hanya menampilkan kesimpulan *Top 3 Aturan Terbaik* dan rekomendasi pengaturan tata letak (*layouting*).
 
 ---
 
-## 📂 Struktur Direktori Proyek
+## Struktur Modular Direktori (OOP)
+Dengan mematuhi kaidah _Object-Oriented Programming_, logika utama proyek dipisahkan menjadi komponen berikut:
 ```text
 project-uas-datamining/
+├── core/
+│   ├── data_handler.py    # Kelas DataHandler: Pra-pemrosesan CSV mentah
+│   └── mining_engine.py   # Kelas MiningEngine: Proses iterasi Apriori
+├── ui/
+│   └── dashboard.py       # Kelas DashboardUI: Komponen antarmuka (Grafik, Tabel)
 ├── dataset/
-│   └── BreadBasket.csv    # Berkas sampel data mentah (dummy dataset)
-├── app.py                 # File kode program utama (Streamlit Application)
-├── requirements.txt       # Daftar pustaka dependensi Python
-├── Dockerfile             # Konfigurasi pembuatan image untuk Docker
-├── docker-compose.yml     # Konfigurasi container service
-├── PRD.md                 # Berkas dokumentasi kebutuhan produk (Requirement)
-└── README.md              # Dokumentasi umum proyek ini
+│   └── BreadBasket.csv    # Berkas sampel data mentah transaksional
+├── app.py                 # Titik masuk utama (Main Controller)
+├── requirements.txt       # Daftar dependensi pustaka Python
+├── Dockerfile             # Skrip pembuat citra container
+├── docker-compose.yml     # Konfigurasi orkestrasi container
+└── README.md              # Dokumentasi teknis proyek (Berkas ini)
 ```
 
 ---
 
-Dibuat dengan ❤️ untuk UAS Data Mining 2026.
+Dibuat untuk UAS Data Mining 2026.
