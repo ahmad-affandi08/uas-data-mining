@@ -1,0 +1,32 @@
+Transaction,Item,date_time,period_day,weekday_weekend
+1,Bread,30-10-2016 09:58,morning,weekend
+2,Scandinavian,30-10-2016 10:05,morning,weekend
+2,Scandinavian,30-10-2016 10:05,morning,weekend
+3,Hot chocolate,30-10-2016 10:07,morning,weekend
+3,Jam,30-10-2016 10:07,morning,weekend
+3,Cookies,30-10-2016 10:07,morning,weekend
+4,Muffin,30-10-2016 10:08,morning,weekend
+5,Coffee,30-10-2016 10:11,morning,weekend
+5,Pastry,30-10-2016 10:11,morning,weekend
+5,Bread,30-10-2016 10:11,morning,weekend
+6,Medialuna,30-10-2016 10:16,morning,weekend
+6,Pastry,30-10-2016 10:16,morning,weekend
+6,Muffin,30-10-2016 10:16,morning,weekend
+7,Medialuna,30-10-2016 10:19,morning,weekend
+7,Pastry,30-10-2016 10:19,morning,weekend
+7,Coffee,30-10-2016 10:19,morning,weekend
+7,Tea,30-10-2016 10:19,morning,weekend
+8,Pastry,30-10-2016 10:20,morning,weekend
+8,Bread,30-10-2016 10:20,morning,weekend
+9,Bread,30-10-2016 10:21,morning,weekend
+9,Muffin,30-10-2016 10:21,morning,weekend
+10,Scandinavian,30-10-2016 10:25,morning,weekend
+10,Medialuna,30-10-2016 10:25,morning,weekend
+11,Bread,30-10-2016 10:27,morning,weekend
+11,Medialuna,30-10-2016 10:27,morning,weekend
+11,Bread,30-10-2016 10:27,morning,weekend
+12,Jam,30-10-2016 10:30,morning,weekend
+12,Coffee,30-10-2016 10:30,morning,weekend
+12,Tartine,30-10-2016 10:30,morning,weekend
+12,Pastry,30-10-2016 10:30,morning,weekend
+12,Tea,30-10-2016 10:30,morning,weekend
