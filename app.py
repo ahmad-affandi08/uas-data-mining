@@ -11,6 +11,7 @@ def main():
     st.write("Aplikasi ini dibuat untuk menemukan pola pembelian konsumen (item yang sering dibeli secara bersamaan).")
     
     st.sidebar.header("1. Upload Dataset")
+    st.sidebar.markdown("🔗 [Unduh Dataset Kaggle di sini](https://www.kaggle.com/datasets/mittalvasu95/the-bread-basket)")
     uploaded_file = st.sidebar.file_uploader("Pilih file CSV", type=['csv'])
     
     st.sidebar.header("2. Konfigurasi Parameter")

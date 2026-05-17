@@ -71,7 +71,7 @@ Jika Anda tidak menggunakan Docker, Anda bisa menjalankannya di mesin lokal:
 ---
 
 ## Panduan Penggunaan
-1. **Unggah Data**: Di panel sebelah kiri, unggah file transaksi berekstensi CSV.
+1. **Unggah Data**: Di panel sebelah kiri, unggah file transaksi berekstensi CSV. Anda bisa mengunduh dataset studi kasus ini melalui [Kaggle: The Bread Basket](https://www.kaggle.com/datasets/mittalvasu95/the-bread-basket).
 2. **Atur Batas Toleransi**: Sesuaikan angka pembatas *Minimum Support* (syarat kepopuleran) dan *Minimum Confidence* (syarat kepastian).
 3. **Jalankan Algoritma**: Tekan tombol "Jalankan Analisis".
 4. **Tab 1 - Langkah Perhitungan**: Gunakan tab ini jika Anda ingin menjelaskan langkah matematis algoritma secara kronologis mulai dari *Data Preprocessing*, Iterasi Apriori, hingga pembuktian rumus secara numerik.
