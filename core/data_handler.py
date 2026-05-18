@@ -6,6 +6,42 @@ class DataHandler:
     @st.cache_data
     def load_data(uploaded_file):
         try:
+            import io
+            content = uploaded_file.read().decode('utf-8', errors='ignore')
+            uploaded_file.seek(0)
+            
+            lines = content.split('\n')
+            
+            header_idx = -1
+            for i, line in enumerate(lines[:50]):
+                if "No Transaksi" in line and "Produk" in line and ";" in line:
+                    header_idx = i
+                    break
+                    
+            if header_idx != -1:
+                df = pd.read_csv(io.StringIO(content), sep=';', skiprows=header_idx)
+                if 'No Transaksi' in df.columns and 'Produk' in df.columns:
+                    df = df.dropna(subset=['No Transaksi', 'Produk'])
+                    
+                    transactions = []
+                    items = []
+                    
+                    for _, row in df.iterrows():
+                        trans = str(row['No Transaksi']).strip()
+                        raw_produk = row['Produk']
+                        if pd.isna(raw_produk):
+                            continue
+                            
+                        prods = str(raw_produk).split(',')
+                        for prod in prods:
+                            prod = prod.strip()
+                            if prod and prod.lower() != 'nan':
+                                transactions.append(trans)
+                                items.append(prod)
+                                
+                    processed_df = pd.DataFrame({'Transaction': transactions, 'Item': items})
+                    return processed_df
+                
             data = pd.read_csv(uploaded_file)
             return data
         except Exception:
