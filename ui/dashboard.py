@@ -1,5 +1,8 @@
 import streamlit as st
 import plotly.express as px
+import plotly.graph_objects as go
+import pandas as pd
+import numpy as np
 
 class DashboardUI:
     @staticmethod
@@ -79,52 +82,226 @@ class DashboardUI:
                 st.latex(r"Lift = \frac{Confidence}{Supp(B)}")
                 st.latex(rf"= \frac{{{conf:.4f}}}{{{supp_B:.4f}}} = {lift:.4f}")
 
+
+
+
     @staticmethod
-    def render_visual_dashboard(basket_sets, frequent_itemsets, rules):
-        st.markdown("## Dasbor Ringkasan Bisnis")
-        
-        col1, col2, col3, col4 = st.columns(4)
-        col1.metric("Total Transaksi Unik", len(basket_sets))
-        col2.metric("Kombinasi Item Ditemukan", len(frequent_itemsets) if frequent_itemsets is not None else 0)
-        col3.metric("Aturan (Rules) Terbentuk", len(rules) if rules is not None else 0)
-        col4.metric("Lift Tertinggi", f"{rules['lift'].max():.2f}" if rules is not None and not rules.empty else "0.00")
-        
+    def render_insights(data, temporal_data, stats, basket_sets, frequent_itemsets, rules):
+        st.markdown("## :material/psychology: Insight & Analisis Mendalam")
+        st.write("Seksi ini menyajikan temuan-temuan penting dari data transaksi yang telah dianalisis, mencakup statistik deskriptif, pola temporal, dan interpretasi hasil algoritma Apriori.")
+
+        # ── SECTION 1: Statistik Deskriptif ──
+        st.markdown("### 📊 1. Ringkasan Statistik Deskriptif")
+        c1, c2, c3, c4 = st.columns(4)
+        c1.metric("Total Baris Data", f"{stats['total_rows']:,}")
+        c2.metric("Transaksi Unik", f"{stats['total_transactions']:,}")
+        c3.metric("Jenis Produk Unik", f"{stats['total_unique_items']:,}")
+        c4.metric("Rata-rata Item/Transaksi", f"{stats['avg_items_per_transaction']:.2f}")
+
+        c5, c6, c7, c8 = st.columns(4)
+        c5.metric("Min Item/Transaksi", int(stats['min_items_per_transaction']))
+        c6.metric("Max Item/Transaksi", int(stats['max_items_per_transaction']))
+        c7.metric("Median Item/Transaksi", f"{stats['median_items_per_transaction']:.1f}")
+        total_rules = len(rules) if rules is not None and not rules.empty else 0
+        c8.metric("Aturan Asosiasi Ditemukan", total_rules)
+
+        st.info(f"**Insight:** Rata-rata pelanggan membeli **{stats['avg_items_per_transaction']:.2f}** item per kunjungan. "
+                f"Dari **{stats['total_unique_items']}** jenis produk, hanya sebagian kecil yang mendominasi penjualan. "
+                f"Ini menunjukkan distribusi penjualan yang **tidak merata** (skewed), di mana beberapa produk inti menjadi penggerak utama revenue.")
+
         st.markdown("---")
-        
-        st.markdown("### :material/emoji_events: Top 10 Produk & Kombinasi Terlaris Keseluruhan")
-        if not frequent_itemsets.empty:
-            top_10_items = frequent_itemsets.head(10).copy()
-            top_10_items['itemsets_str'] = top_10_items['itemsets'].apply(lambda x: ', '.join(list(x)))
-            top_10_items = top_10_items.sort_values(by='support', ascending=True)
-            fig_freq = px.bar(top_10_items, x="support", y="itemsets_str", orientation='h', 
-                              color="support", color_continuous_scale="Viridis",
-                              labels={"support": "Nilai Support (Skala 0-1)", "itemsets_str": "Kombinasi Item"})
-            st.plotly_chart(fig_freq, use_container_width=True)
-            
+
+        # ── SECTION 2: Top & Bottom Produk ──
+        st.markdown("### 🏆 2. Produk Terlaris vs Produk Kurang Diminati")
+        col_top, col_bot = st.columns(2)
+        with col_top:
+            st.markdown("**Top 10 Produk Terlaris**")
+            top_df = stats['top_items'].reset_index()
+            top_df.columns = ['Produk', 'Jumlah Terjual']
+            fig_top = px.bar(top_df, x='Jumlah Terjual', y='Produk', orientation='h',
+                             color='Jumlah Terjual', color_continuous_scale='Greens')
+            fig_top.update_layout(yaxis=dict(autorange="reversed"), height=350, margin=dict(t=10))
+            st.plotly_chart(fig_top, use_container_width=True)
+        with col_bot:
+            st.markdown("**10 Produk Paling Jarang Dibeli**")
+            bot_df = stats['bottom_items'].reset_index()
+            bot_df.columns = ['Produk', 'Jumlah Terjual']
+            fig_bot = px.bar(bot_df, x='Jumlah Terjual', y='Produk', orientation='h',
+                             color='Jumlah Terjual', color_continuous_scale='Reds_r')
+            fig_bot.update_layout(yaxis=dict(autorange="reversed"), height=350, margin=dict(t=10))
+            st.plotly_chart(fig_bot, use_container_width=True)
+
+        top_product = stats['top_items'].index[0]
+        top_count = stats['top_items'].iloc[0]
+        pct = (top_count / stats['total_rows']) * 100
+        st.success(f"**Insight:** Produk **{top_product}** adalah yang paling laris dengan **{top_count:,}** kemunculan "
+                   f"(**{pct:.1f}%** dari seluruh baris transaksi). Produk-produk di kolom kanan sangat jarang dibeli dan bisa dipertimbangkan untuk "
+                   f"di-*bundle* bersama produk populer atau dievaluasi ulang keberadaannya di inventaris.")
+
         st.markdown("---")
-        
-        if rules is not None and not rules.empty:
-            st.markdown("### :material/scatter_plot: Peta Kekuatan Aturan Asosiasi")
-            st.info(":material/lightbulb: **Cara Membaca:** Semakin ke kanan posisinya (Support tinggi), item semakin sering dibeli. Semakin ke atas posisinya (Confidence tinggi), hubungan ketergantungannya semakin pasti. Ukuran dan warna gelembung yang membesar menandakan nilai *Lift* yang kuat.")
-            fig_scatter = px.scatter(rules, x="support", y="confidence", color="lift", 
-                                     hover_name="Aturan", size="lift", color_continuous_scale="Plasma",
-                                     labels={"support": "Support", "confidence": "Confidence", "lift": "Lift"})
-            st.plotly_chart(fig_scatter, use_container_width=True)
-            
+
+        # ── SECTION 3: Distribusi Item per Transaksi ──
+        st.markdown("### 📦 3. Distribusi Jumlah Item per Transaksi")
+        dist = stats['items_per_transaction_distribution'].reset_index()
+        dist.columns = ['Jumlah Item', 'Frekuensi Transaksi']
+        fig_dist = px.bar(dist, x='Jumlah Item', y='Frekuensi Transaksi',
+                          color='Frekuensi Transaksi', color_continuous_scale='Blues',
+                          labels={'Jumlah Item': 'Jumlah Item dalam 1 Transaksi', 'Frekuensi Transaksi': 'Jumlah Transaksi'})
+        fig_dist.update_layout(height=350, margin=dict(t=10))
+        st.plotly_chart(fig_dist, use_container_width=True)
+
+        mode_items = dist.loc[dist['Frekuensi Transaksi'].idxmax(), 'Jumlah Item']
+        mode_freq = dist['Frekuensi Transaksi'].max()
+        st.info(f"**Insight:** Mayoritas transaksi (**{mode_freq:,}** transaksi) hanya berisi **{mode_items} item**. "
+                f"Ini menunjukkan bahwa pelanggan cenderung melakukan pembelian dalam jumlah kecil. "
+                f"Strategi *cross-selling* dan *bundling* bisa digunakan untuk meningkatkan jumlah item per keranjang.")
+
+        st.markdown("---")
+
+        # ── SECTION 4: Analisis Temporal ──
+        has_temporal = 'hour' in temporal_data.columns
+        if has_temporal:
+            st.markdown("### ⏰ 4. Analisis Pola Temporal (Waktu)")
+
+            col_t1, col_t2 = st.columns(2)
+            with col_t1:
+                st.markdown("**Transaksi per Jam**")
+                hourly = temporal_data.groupby('hour')['Transaction'].nunique().reset_index()
+                hourly.columns = ['Jam', 'Jumlah Transaksi']
+                fig_hour = px.area(hourly, x='Jam', y='Jumlah Transaksi',
+                                   color_discrete_sequence=['#636EFA'])
+                fig_hour.update_layout(height=300, margin=dict(t=10))
+                st.plotly_chart(fig_hour, use_container_width=True)
+
+            with col_t2:
+                st.markdown("**Transaksi per Hari**")
+                day_order = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+                daily = temporal_data.groupby('day_name')['Transaction'].nunique().reindex(day_order).reset_index()
+                daily.columns = ['Hari', 'Jumlah Transaksi']
+                daily = daily.dropna()
+                fig_day = px.bar(daily, x='Hari', y='Jumlah Transaksi',
+                                 color='Jumlah Transaksi', color_continuous_scale='Sunset')
+                fig_day.update_layout(height=300, margin=dict(t=10))
+                st.plotly_chart(fig_day, use_container_width=True)
+
+            # Period analysis
+            if 'period_day' in temporal_data.columns:
+                st.markdown("**Transaksi Berdasarkan Periode Hari**")
+                period = temporal_data.groupby('period_day')['Transaction'].nunique().reset_index()
+                period.columns = ['Periode', 'Jumlah Transaksi']
+                fig_period = px.pie(period, values='Jumlah Transaksi', names='Periode',
+                                    color_discrete_sequence=px.colors.qualitative.Set2, hole=0.4)
+                fig_period.update_layout(height=350, margin=dict(t=10))
+                st.plotly_chart(fig_period, use_container_width=True)
+
+            peak_hour = hourly.loc[hourly['Jumlah Transaksi'].idxmax()]
+            busiest_day = daily.loc[daily['Jumlah Transaksi'].idxmax()] if not daily.empty else None
+            insight_text = f"**Insight:** Jam tersibuk adalah pukul **{int(peak_hour['Jam']):02d}:00** dengan **{int(peak_hour['Jumlah Transaksi']):,}** transaksi."
+            if busiest_day is not None:
+                insight_text += f" Hari tersibuk adalah **{busiest_day['Hari']}**. Pengetahuan ini dapat digunakan untuk mengoptimalkan jadwal stok, shift karyawan, dan waktu promosi."
+            st.success(insight_text)
             st.markdown("---")
-            
-            st.markdown("### :material/insights: Kesimpulan & Rekomendasi Bisnis Teratas")
-            st.write("Rekomendasi taktis untuk pengaturan tata letak (*layouting*) dan pembuatan paket promo (*bundling*):")
-            
-            num_rules_to_show = min(3, len(rules))
-            for idx in range(num_rules_to_show):
-                rule = rules.iloc[idx]
-                if rule['lift'] > 1:
-                    with st.container():
-                        st.success(f"**:material/military_tech: Peringkat #{idx + 1}: {rule['Aturan']}**")
-                        st.write(f"Jika pelanggan membeli **{rule['antecedents_str']}**, maka kepastian mereka untuk juga membeli **{rule['consequents_str']}** adalah sebesar **{rule['confidence']*100:.1f}%**.")
-                        st.write(f"Kecenderungan (*Lift*) mereka membeli bersamaan ini lebih tinggi sebanyak **{rule['lift']:.2f}x lipat** dibandingkan jika pelanggan membeli barang secara kebetulan/acak.")
-                else:
-                    if idx == 0:
-                        st.warning("Belum ditemukan relasi produk yang cukup kuat (Nilai Lift <= 1) untuk dijadikan paket promo unggulan.")
-                    break
+
+        # ── SECTION 5: Heatmap Co-occurrence ──
+        section_num = 5 if has_temporal else 4
+        st.markdown(f"### 🔥 {section_num}. Heatmap Korelasi Antar Produk Populer")
+        st.write("Matriks ini menunjukkan seberapa sering dua produk dibeli bersamaan dalam satu transaksi (co-occurrence).")
+
+        top_n = min(15, len(basket_sets.columns))
+        top_items_list = data['Item'].value_counts().head(top_n).index.tolist()
+        filtered_cols = [c for c in top_items_list if c in basket_sets.columns]
+
+        if len(filtered_cols) >= 2:
+            subset = basket_sets[filtered_cols]
+            cooccurrence = subset.T.dot(subset)
+            np.fill_diagonal(cooccurrence.values, 0)
+
+            fig_heat = px.imshow(cooccurrence, color_continuous_scale='YlOrRd', aspect='auto',
+                                 labels=dict(color="Frekuensi Co-occurrence"))
+            fig_heat.update_layout(height=500, margin=dict(t=10))
+            st.plotly_chart(fig_heat, use_container_width=True)
+
+            max_val = cooccurrence.max().max()
+            max_pair = cooccurrence.stack().idxmax()
+            st.info(f"**Insight:** Pasangan produk dengan co-occurrence tertinggi adalah **{max_pair[0]}** & **{max_pair[1]}** "
+                    f"(muncul bersamaan di **{int(max_val)}** transaksi). Pasangan ini sangat potensial untuk dijadikan paket promo bundling.")
+        else:
+            st.write("Data tidak cukup untuk membuat heatmap.")
+
+        st.markdown("---")
+
+        # ── SECTION 6: Network Graph ──
+        section_num += 1
+        if rules is not None and not rules.empty:
+            st.markdown(f"### 🕸️ {section_num}. Network Graph Hubungan Produk")
+            st.write("Visualisasi jaringan yang menunjukkan hubungan asosiasi antar produk berdasarkan aturan yang ditemukan.")
+
+            import plotly.graph_objects as go
+            import math
+
+            edges = rules.head(min(20, len(rules)))
+            nodes = list(set(edges['antecedents_str'].tolist() + edges['consequents_str'].tolist()))
+            node_idx = {n: i for i, n in enumerate(nodes)}
+
+            angle_step = 2 * math.pi / len(nodes) if len(nodes) > 0 else 0
+            node_x = [math.cos(i * angle_step) for i in range(len(nodes))]
+            node_y = [math.sin(i * angle_step) for i in range(len(nodes))]
+
+            edge_x, edge_y = [], []
+            for _, row in edges.iterrows():
+                x0, y0 = node_x[node_idx[row['antecedents_str']]], node_y[node_idx[row['antecedents_str']]]
+                x1, y1 = node_x[node_idx[row['consequents_str']]], node_y[node_idx[row['consequents_str']]]
+                edge_x += [x0, x1, None]
+                edge_y += [y0, y1, None]
+
+            fig_net = go.Figure()
+            fig_net.add_trace(go.Scatter(x=edge_x, y=edge_y, mode='lines',
+                                         line=dict(width=1, color='#888'), hoverinfo='none'))
+            fig_net.add_trace(go.Scatter(x=node_x, y=node_y, mode='markers+text',
+                                         text=nodes, textposition='top center',
+                                         marker=dict(size=20, color=list(range(len(nodes))),
+                                                     colorscale='Viridis', line=dict(width=2, color='white')),
+                                         hoverinfo='text'))
+            fig_net.update_layout(showlegend=False, height=500, margin=dict(t=10, b=10, l=10, r=10),
+                                  xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+                                  yaxis=dict(showgrid=False, zeroline=False, showticklabels=False))
+            st.plotly_chart(fig_net, use_container_width=True)
+            st.markdown("---")
+
+        # ── SECTION 7: Interpretasi Otomatis Rules ──
+        section_num += 1
+        st.markdown(f"### 💡 {section_num}. Interpretasi & Kesimpulan Akhir")
+
+        if rules is not None and not rules.empty:
+            avg_conf = rules['confidence'].mean() * 100
+            avg_lift = rules['lift'].mean()
+            strong_rules = rules[rules['lift'] > 1]
+            weak_rules = rules[rules['lift'] <= 1]
+
+            st.write(f"Dari total **{len(rules)}** aturan asosiasi yang berhasil diekstrak:")
+            st.write(f"- **{len(strong_rules)}** aturan memiliki *Lift* > 1 (**hubungan positif** — produk saling memperkuat pembelian)")
+            st.write(f"- **{len(weak_rules)}** aturan memiliki *Lift* ≤ 1 (hubungan lemah/independen)")
+            st.write(f"- Rata-rata *Confidence*: **{avg_conf:.1f}%**")
+            st.write(f"- Rata-rata *Lift*: **{avg_lift:.2f}x**")
+
+            st.markdown("#### Rekomendasi Strategis Berdasarkan Data:")
+            if len(strong_rules) > 0:
+                best = strong_rules.iloc[0]
+                st.success(f"🎯 **Bundling Utama:** Gabungkan **{best['antecedents_str']}** dengan **{best['consequents_str']}** "
+                           f"dalam satu paket promo. Confidence {best['confidence']*100:.1f}% berarti {best['confidence']*100:.0f} dari 100 "
+                           f"pembeli {best['antecedents_str']} juga akan membeli {best['consequents_str']}.")
+
+            st.markdown("**Strategi Tata Letak Toko (Planogram):**")
+            if len(strong_rules) >= 2:
+                for i in range(min(3, len(strong_rules))):
+                    r = strong_rules.iloc[i]
+                    st.write(f"  {i+1}. Letakkan **{r['antecedents_str']}** berdekatan dengan **{r['consequents_str']}** "
+                             f"(Lift: {r['lift']:.2f}x, Confidence: {r['confidence']*100:.1f}%)")
+
+            st.markdown("**Strategi Pemasaran Digital:**")
+            st.write("- Gunakan aturan asosiasi terkuat untuk sistem *recommendation engine* di platform online.")
+            st.write("- Tampilkan \"*Pelanggan yang membeli X juga membeli Y*\" berdasarkan rules dengan confidence tertinggi.")
+            if has_temporal:
+                st.write(f"- Jalankan promosi flash sale pada jam **{int(peak_hour['Jam']):02d}:00** saat traffic paling tinggi.")
+        else:
+            st.warning("Belum ada aturan asosiasi untuk diinterpretasikan. Coba turunkan parameter Minimum Support atau Minimum Confidence.")

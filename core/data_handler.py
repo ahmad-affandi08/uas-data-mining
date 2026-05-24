@@ -62,3 +62,39 @@ class DataHandler:
                 
         basket_sets = basket.map(encode_units)
         return basket_sets
+
+    @staticmethod
+    def get_temporal_data(data):
+        """Extract temporal information from the raw data for insight analysis."""
+        temporal = data.copy()
+        
+        # Parse date_time if available
+        if 'date_time' in temporal.columns:
+            temporal['date_time'] = pd.to_datetime(temporal['date_time'], format='mixed', dayfirst=True, errors='coerce')
+            temporal['hour'] = temporal['date_time'].dt.hour
+            temporal['day_name'] = temporal['date_time'].dt.day_name()
+            temporal['month'] = temporal['date_time'].dt.month
+            temporal['month_name'] = temporal['date_time'].dt.month_name()
+            temporal['date'] = temporal['date_time'].dt.date
+        
+        return temporal
+
+    @staticmethod
+    def compute_descriptive_stats(data):
+        """Compute descriptive statistics from the transaction data."""
+        stats = {}
+        stats['total_rows'] = len(data)
+        stats['total_transactions'] = data['Transaction'].nunique()
+        stats['total_unique_items'] = data['Item'].nunique()
+        
+        items_per_trans = data.groupby('Transaction')['Item'].count()
+        stats['avg_items_per_transaction'] = items_per_trans.mean()
+        stats['max_items_per_transaction'] = items_per_trans.max()
+        stats['min_items_per_transaction'] = items_per_trans.min()
+        stats['median_items_per_transaction'] = items_per_trans.median()
+        
+        stats['top_items'] = data['Item'].value_counts().head(10)
+        stats['bottom_items'] = data['Item'].value_counts().tail(10)
+        stats['items_per_transaction_distribution'] = items_per_trans.value_counts().sort_index()
+        
+        return stats

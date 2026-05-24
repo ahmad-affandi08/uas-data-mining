@@ -43,6 +43,10 @@ def main():
                     # Proses Transformasi Data
                     basket_sets = DataHandler.preprocess_data(data)
                     
+                    # Hitung data temporal dan statistik deskriptif
+                    temporal_data = DataHandler.get_temporal_data(data)
+                    desc_stats = DataHandler.compute_descriptive_stats(data)
+                    
                     # Inisialisasi Engine Data Mining (OOP)
                     engine = MiningEngine(min_support, min_confidence)
                     
@@ -60,14 +64,14 @@ def main():
                         return
                     
                     st.markdown("---")
-                    tab1, tab2 = st.tabs(["Langkah Perhitungan (Tabel)", "Visualisasi Grafik & Dasbor"])
+                    tab1, tab2 = st.tabs(["Langkah Perhitungan (Tabel)", "Insight & Analisis Mendalam"])
                     
                     # Render UI berdasarkan komponen (OOP)
                     with tab1:
                         DashboardUI.render_calculation_steps(basket_sets, frequent_itemsets, rules, min_support, min_confidence)
-                        
+                    
                     with tab2:
-                        DashboardUI.render_visual_dashboard(basket_sets, frequent_itemsets, rules)
+                        DashboardUI.render_insights(data, temporal_data, desc_stats, basket_sets, frequent_itemsets, rules)
                         
                 except Exception as e:
                     st.error(f"Terjadi kesalahan saat memproses dataset: {e}")
