@@ -2,7 +2,7 @@
 
 Sistem ini dirancang untuk mengotomatisasi penemuan pola pembelian konsumen menggunakan teknik **Association Rule Mining**. Dengan memanfaatkan algoritma **Apriori**, sistem dapat menganalisis item-item yang sering dibeli secara bersamaan oleh pelanggan dalam satu transaksi (Market Basket Analysis).
 
-Proyek ini dibuat untuk memenuhi **Tugas Besar Ujian Akhir Semester (UAS) Mata Kuliah Data Mining**, Universitas Duta Bangsa Surakarta.
+Proyek ini dibuat untuk memenuhi **Tugas Ujian Akhir Semester (UAS) Mata Kuliah Data Mining**, Universitas Duta Bangsa Surakarta.
 
 ## Kelompok 3 (Topik: Asosiasi)
 1. FEBRI SETIYANTO
