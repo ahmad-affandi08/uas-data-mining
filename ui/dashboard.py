@@ -370,17 +370,33 @@ class DashboardUI:
                            f"dalam satu paket promo. Confidence {best['confidence']*100:.1f}% berarti {best['confidence']*100:.0f} dari 100 "
                            f"pembeli {best['antecedents_str']} juga akan membeli {best['consequents_str']}.")
 
-            st.markdown("**Strategi Tata Letak Toko (Planogram):**")
+            st.markdown("**Strategi Paket Combo & Menu Bundling:**")
             if len(strong_rules) >= 2:
                 for i in range(min(3, len(strong_rules))):
                     r = strong_rules.iloc[i]
-                    st.write(f"  {i+1}. Letakkan **{r['antecedents_str']}** berdekatan dengan **{r['consequents_str']}** "
-                             f"(Lift: {r['lift']:.2f}x, Confidence: {r['confidence']*100:.1f}%)")
+                    st.write(f"  {i+1}. Buat **Paket Combo** yang menggabungkan **{r['antecedents_str']}** + **{r['consequents_str']}** "
+                             f"dengan harga spesial (Lift: {r['lift']:.2f}x, Confidence: {r['confidence']*100:.1f}%)")
 
-            st.markdown("**Strategi Pemasaran Digital:**")
-            st.write("- Gunakan aturan asosiasi terkuat untuk sistem *recommendation engine* di platform online.")
-            st.write("- Tampilkan \"*Pelanggan yang membeli X juga membeli Y*\" berdasarkan rules dengan confidence tertinggi.")
+            st.markdown("**Strategi Suggestive Selling (Penawaran di Kasir/Counter):**")
+            if len(strong_rules) > 0:
+                best_sg = strong_rules.iloc[0]
+                st.write(f"- Latih kasir/barista untuk menawarkan **{best_sg['consequents_str']}** setiap kali pelanggan memesan **{best_sg['antecedents_str']}**. "
+                         f"Data menunjukkan **{best_sg['confidence']*100:.0f}%** pembeli {best_sg['antecedents_str']} juga membeli {best_sg['consequents_str']}.")
+            st.write("- Pasang *tent card* atau *table standee* di meja/counter yang mempromosikan kombinasi produk terkuat.")
+            st.write("- Tampilkan menu combo di posisi paling terlihat pada *menu board* (papan menu) atau etalase.")
+
+            st.markdown("**Strategi Etalase & Display Produk:**")
+            if len(strong_rules) >= 2:
+                for i in range(min(3, len(strong_rules))):
+                    r = strong_rules.iloc[i]
+                    st.write(f"  {i+1}. Posisikan **{r['antecedents_str']}** dan **{r['consequents_str']}** berdekatan di etalase/display "
+                             f"agar pelanggan mudah mengambil keduanya saat memilih (Lift: {r['lift']:.2f}x)")
+
+            st.markdown("**Strategi Pemasaran Digital & Promosi:**")
+            st.write("- Gunakan aturan asosiasi terkuat untuk sistem *recommendation engine* di platform pemesanan online (GoFood, GrabFood, dll).")
+            st.write("- Tampilkan \"*Pelanggan yang memesan X juga sering memesan Y*\" pada aplikasi atau media sosial.")
             if has_temporal:
-                st.write(f"- Jalankan promosi flash sale pada jam **{int(peak_hour['Jam']):02d}:00** saat traffic paling tinggi.")
+                st.write(f"- Jalankan promosi flash sale / happy hour pada pukul **{int(peak_hour['Jam']):02d}:00** saat kunjungan pelanggan paling tinggi.")
+            st.write("- Buat promo *bundle* khusus di platform delivery untuk meningkatkan nilai rata-rata pesanan.")
         else:
             st.warning("Belum ada aturan asosiasi untuk diinterpretasikan. Coba turunkan parameter Minimum Support atau Minimum Confidence.")
