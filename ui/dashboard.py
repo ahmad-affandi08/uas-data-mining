@@ -3,6 +3,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 import pandas as pd
 import numpy as np
+from itertools import combinations
 
 class DashboardUI:
     @staticmethod
@@ -18,21 +19,99 @@ class DashboardUI:
         
         # LANGKAH 2
         st.markdown("### Langkah 2: Pembentukan Frequent Itemsets (Iterasi Apriori)")
-        st.write(f"Sistem mengeliminasi barang/kombinasi yang jarang dibeli, dan hanya menyimpan yang memenuhi batas minimal kepopuleran (*Minimum Support* = {min_support}). Proses ini dilakukan bertahap mulai dari 1 barang, 2 barang, dst.")
+        st.write(f"Sistem mengevaluasi **semua** kandidat barang/kombinasi dan menandai mana yang memenuhi batas minimal kepopuleran (*Minimum Support* = {min_support}). Proses ini dilakukan bertahap mulai dari 1 barang, 2 barang, dst.")
+        
+        N = len(basket_sets)
         
         if not frequent_itemsets.empty:
             max_length = int(frequent_itemsets['length'].max())
+            
+            # Kumpulkan frequent items dari iterasi sebelumnya untuk generate kandidat
+            prev_frequent_items = None
+            
             for i in range(1, max_length + 1):
                 st.markdown(f"#### :material/autorenew: Iterasi ke-{i} (Kombinasi {i} Produk)")
-                iter_data = frequent_itemsets[frequent_itemsets['length'] == i].copy()
                 
-                if not iter_data.empty:
-                    iter_data['itemsets_str'] = iter_data['itemsets'].apply(lambda x: ', '.join(list(x)))
-                    st.write(f"Ditemukan **{len(iter_data)}** kombinasi yang lolos seleksi:")
-                    display_iter = iter_data[['itemsets_str', 'support']].rename(columns={'itemsets_str': 'Kombinasi Item', 'support': 'Nilai Support'})
-                    st.dataframe(display_iter.sort_values(by='Nilai Support', ascending=False))
+                # Ambil itemsets yang lolos di iterasi ini
+                iter_passed = frequent_itemsets[frequent_itemsets['length'] == i].copy()
+                passed_sets = set()
+                if not iter_passed.empty:
+                    passed_sets = set(iter_passed['itemsets'].apply(lambda x: frozenset(x)))
+                
+                all_candidates = []
+                
+                if i == 1:
+                    # Iterasi 1: semua item individual adalah kandidat
+                    for col in basket_sets.columns:
+                        sup = basket_sets[col].sum() / N
+                        item_fs = frozenset([col])
+                        status = "Lolos" if item_fs in passed_sets else "Tidak Lolos"
+                        all_candidates.append({
+                            'Kombinasi Item': col,
+                            'Frekuensi': int(basket_sets[col].sum()),
+                            'Nilai Support': round(sup, 6),
+                            'Keterangan': status,
+                        })
+                    prev_frequent_items = [fs for fs in passed_sets]
                 else:
-                    st.write("Tidak ada kombinasi yang lolos seleksi pada iterasi ini.")
+                    # Iterasi 2+: generate kandidat dari frequent items iterasi sebelumnya
+                    if prev_frequent_items and len(prev_frequent_items) >= 2:
+                        # Kumpulkan semua item unik dari frequent itemsets sebelumnya
+                        unique_items = set()
+                        for fs in prev_frequent_items:
+                            unique_items.update(fs)
+                        unique_items = sorted(unique_items)
+                        
+                        # Generate kombinasi i-item dari item-item yang frequent
+                        seen_candidates = set()
+                        for combo in combinations(unique_items, i):
+                            candidate = frozenset(combo)
+                            if candidate in seen_candidates:
+                                continue
+                            seen_candidates.add(candidate)
+                            
+                            # Hitung support untuk kandidat ini
+                            cols = list(candidate)
+                            if all(c in basket_sets.columns for c in cols):
+                                freq = int((basket_sets[cols].sum(axis=1) == i).sum())
+                                sup = freq / N
+                                status = "Lolos" if candidate in passed_sets else "Tidak Lolos"
+                                all_candidates.append({
+                                    'Kombinasi Item': ', '.join(sorted(candidate)),
+                                    'Frekuensi': freq,
+                                    'Nilai Support': round(sup, 6),
+                                    'Keterangan': status,
+                                })
+                    
+                    # Update prev_frequent_items untuk iterasi berikutnya
+                    prev_frequent_items = [fs for fs in passed_sets]
+                
+                if all_candidates:
+                    df_candidates = pd.DataFrame(all_candidates)
+                    df_candidates = df_candidates.sort_values(by='Nilai Support', ascending=False).reset_index(drop=True)
+                    
+                    lolos_count = len(df_candidates[df_candidates['Keterangan'] == 'Lolos'])
+                    gagal_count = len(df_candidates[df_candidates['Keterangan'] == 'Tidak Lolos'])
+                    
+                    st.write(
+                        f"Total kandidat: **{len(df_candidates)}** — "
+                        f":material/check_circle: Lolos: **{lolos_count}** — "
+                        f":material/cancel: Tidak Lolos: **{gagal_count}**"
+                    )
+                    
+                    # Styling: warna hijau untuk Lolos, merah untuk Tidak Lolos
+                    def color_status(val):
+                        if val == 'Lolos':
+                            return 'background-color: #1B5E20; color: #A5D6A7; font-weight: bold'
+                        else:
+                            return 'background-color: #B71C1C; color: #EF9A9A; font-weight: bold'
+                    
+                    styled_df = df_candidates.style.applymap(
+                        color_status, subset=['Keterangan']
+                    )
+                    st.dataframe(styled_df, use_container_width=True, hide_index=True)
+                else:
+                    st.write("Tidak ada kandidat yang dapat dihasilkan pada iterasi ini.")
         
         # LANGKAH 3
         st.markdown("### Langkah 3: Ekstraksi Aturan Asosiasi (Association Rules)")
@@ -91,7 +170,7 @@ class DashboardUI:
         st.write("Seksi ini menyajikan temuan-temuan penting dari data transaksi yang telah dianalisis, mencakup statistik deskriptif, pola temporal, dan interpretasi hasil algoritma Apriori.")
 
         # ── SECTION 1: Statistik Deskriptif ──
-        st.markdown("### 📊 1. Ringkasan Statistik Deskriptif")
+        st.markdown("### :material/bar_chart: 1. Ringkasan Statistik Deskriptif")
         c1, c2, c3, c4 = st.columns(4)
         c1.metric("Total Baris Data", f"{stats['total_rows']:,}")
         c2.metric("Transaksi Unik", f"{stats['total_transactions']:,}")
@@ -112,7 +191,7 @@ class DashboardUI:
         st.markdown("---")
 
         # ── SECTION 2: Top & Bottom Produk ──
-        st.markdown("### 🏆 2. Produk Terlaris vs Produk Kurang Diminati")
+        st.markdown("### :material/emoji_events: 2. Produk Terlaris vs Produk Kurang Diminati")
         col_top, col_bot = st.columns(2)
         with col_top:
             st.markdown("**Top 10 Produk Terlaris**")
@@ -141,7 +220,7 @@ class DashboardUI:
         st.markdown("---")
 
         # ── SECTION 3: Distribusi Item per Transaksi ──
-        st.markdown("### 📦 3. Distribusi Jumlah Item per Transaksi")
+        st.markdown("### :material/inventory_2: 3. Distribusi Jumlah Item per Transaksi")
         dist = stats['items_per_transaction_distribution'].reset_index()
         dist.columns = ['Jumlah Item', 'Frekuensi Transaksi']
         fig_dist = px.bar(dist, x='Jumlah Item', y='Frekuensi Transaksi',
@@ -161,7 +240,7 @@ class DashboardUI:
         # ── SECTION 4: Analisis Temporal ──
         has_temporal = 'hour' in temporal_data.columns
         if has_temporal:
-            st.markdown("### ⏰ 4. Analisis Pola Temporal (Waktu)")
+            st.markdown("### :material/schedule: 4. Analisis Pola Temporal (Waktu)")
 
             col_t1, col_t2 = st.columns(2)
             with col_t1:
@@ -204,7 +283,7 @@ class DashboardUI:
 
         # ── SECTION 5: Heatmap Co-occurrence ──
         section_num = 5 if has_temporal else 4
-        st.markdown(f"### 🔥 {section_num}. Heatmap Korelasi Antar Produk Populer")
+        st.markdown(f"### :material/local_fire_department: {section_num}. Heatmap Korelasi Antar Produk Populer")
         st.write("Matriks ini menunjukkan seberapa sering dua produk dibeli bersamaan dalam satu transaksi (co-occurrence).")
 
         top_n = min(15, len(basket_sets.columns))
@@ -233,7 +312,7 @@ class DashboardUI:
         # ── SECTION 6: Network Graph ──
         section_num += 1
         if rules is not None and not rules.empty:
-            st.markdown(f"### 🕸️ {section_num}. Network Graph Hubungan Produk")
+            st.markdown(f"### :material/hub: {section_num}. Network Graph Hubungan Produk")
             st.write("Visualisasi jaringan yang menunjukkan hubungan asosiasi antar produk berdasarkan aturan yang ditemukan.")
 
             import plotly.graph_objects as go
@@ -270,7 +349,7 @@ class DashboardUI:
 
         # ── SECTION 7: Interpretasi Otomatis Rules ──
         section_num += 1
-        st.markdown(f"### 💡 {section_num}. Interpretasi & Kesimpulan Akhir")
+        st.markdown(f"### :material/lightbulb: {section_num}. Interpretasi & Kesimpulan Akhir")
 
         if rules is not None and not rules.empty:
             avg_conf = rules['confidence'].mean() * 100
@@ -279,15 +358,15 @@ class DashboardUI:
             weak_rules = rules[rules['lift'] <= 1]
 
             st.write(f"Dari total **{len(rules)}** aturan asosiasi yang berhasil diekstrak:")
-            st.write(f"- **{len(strong_rules)}** aturan memiliki *Lift* > 1 (**hubungan positif** — produk saling memperkuat pembelian)")
-            st.write(f"- **{len(weak_rules)}** aturan memiliki *Lift* ≤ 1 (hubungan lemah/independen)")
+            st.write(f"- **{len(strong_rules)}** aturan memiliki *Lift* > 1 (**hubungan positif** -- produk saling memperkuat pembelian)")
+            st.write(f"- **{len(weak_rules)}** aturan memiliki *Lift* <= 1 (hubungan lemah/independen)")
             st.write(f"- Rata-rata *Confidence*: **{avg_conf:.1f}%**")
             st.write(f"- Rata-rata *Lift*: **{avg_lift:.2f}x**")
 
             st.markdown("#### Rekomendasi Strategis Berdasarkan Data:")
             if len(strong_rules) > 0:
                 best = strong_rules.iloc[0]
-                st.success(f"🎯 **Bundling Utama:** Gabungkan **{best['antecedents_str']}** dengan **{best['consequents_str']}** "
+                st.success(f":material/target: **Bundling Utama:** Gabungkan **{best['antecedents_str']}** dengan **{best['consequents_str']}** "
                            f"dalam satu paket promo. Confidence {best['confidence']*100:.1f}% berarti {best['confidence']*100:.0f} dari 100 "
                            f"pembeli {best['antecedents_str']} juga akan membeli {best['consequents_str']}.")
 
